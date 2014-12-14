@@ -1,19 +1,16 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 ##Let's first setup all the stuff we need 
-```{r, echo=T, results='hide', warning=FALSE, message=FALSE}
+
+```r
 library(dplyr)
 library(data.table)
 library(ggplot2)
 ```
 
 ## Let's import the data and convert the dates into POSIXct format. 
-```{r, echo = TRUE}
+
+```r
 if(!file.exists("./data/activity.csv")){
   unzip("activity.zip", exdir = "./data")}
 rawdata <- read.csv("./data/activity.csv")
@@ -22,38 +19,63 @@ data$date <- as.POSIXct(data$date)
 ```
 
 ## What is the mean total number of steps taken per day?
-```{r, echo=TRUE, results='hold',warning=FALSE, message=FALSE}
+
+```r
 summarised1 <- summarise(group_by(data[!is.na(data$steps),], date), sum(steps))
 setnames(summarised1,"sum(steps)","total_steps")
 ggplot(summarised1, aes(x=total_steps)) + geom_histogram(binwidth=2000, colour="black", fill="white") +
   xlim(0,24000) + ylim(0,15) + ggtitle("Total number of steps taken per day") + 
   scale_x_continuous(breaks=seq(0,24000,4000))
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
+```r
 print(paste("The mean total number of steps per day is: ", mean(summarised1$total_steps)))
 print(paste("The median total number of steps per day is: ", median(summarised1$total_steps)))
 ```
 
+```
+## [1] "The mean total number of steps per day is:  10766.1886792453"
+## [1] "The median total number of steps per day is:  10765"
+```
+
 ## What is the average daily activity pattern?
-```{r, echo = TRUE, warning=FALSE, message=FALSE}
+
+```r
 summarised2 <- summarise(group_by(data[!is.na(data$steps),], interval), mean(steps))
 setnames(summarised2,"mean(steps)","mean_steps")
 
 ggplot(summarised2, aes(y=mean_steps, x=interval)) + geom_line() + xlim(0,2400) + ylim(0,210) + 
   ggtitle("Mean number of steps per 5min interval") + scale_x_continuous(breaks=seq(0,2400,200)) + 
       xlab("Interval commencement time, 24hour time notation")
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
+
+```r
 storeMaxInterval <- summarised2[summarised2$mean_steps == max(summarised2$mean_steps),interval]
 print(paste("The 5min interval that, averaged across all days, contains the maximum number of steps is:", storeMaxInterval, "to", sum(storeMaxInterval,5)))
 ```
 
+```
+## [1] "The 5min interval that, averaged across all days, contains the maximum number of steps is: 835 to 840"
+```
+
 ## Imputing missing values
-```{r, echo = TRUE, results='hold', warning=FALSE, message=FALSE}
+
+```r
 print(paste("The total number of missing values in the dataset is: ", table(is.na(data))[2]))
+```
+
+```
+## [1] "The total number of missing values in the dataset is:  2304"
 ```
 
 We will fill in for all of the missing values in the dataset, by replacing each missing value with the corresponding across-all-days mean for that 5-minute interval.
 
-```{r, echo = TRUE, results='hold', warning=FALSE, message=FALSE}
+
+```r
 cleanData <- data 
 
 #This for loop replaces the missing values 
@@ -71,9 +93,18 @@ setnames(summarised3,"sum(steps)","total_steps")
 ggplot(summarised3, aes(x=total_steps)) + geom_histogram(binwidth=2000, colour="black", fill="white") +
   xlim(0,24000) + ylim(0,15) + ggtitle("Total number of steps taken per day") + 
   scale_x_continuous(breaks=seq(0,24000,4000))
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-6-1.png) 
+
+```r
 print(paste("The mean total number of steps per day is: ", mean(summarised3$total_steps)))
 print(paste("The median total number of steps per day is: ", median(summarised3$total_steps)))
+```
+
+```
+## [1] "The mean total number of steps per day is:  10766.1886792453"
+## [1] "The median total number of steps per day is:  10766.1886792453"
 ```
 We see that the mean calculated in this part is the same as what we calculated in the first part of the assignment.
 However, the calculated median is now different and is equal to the mean. 
@@ -84,7 +115,8 @@ By definition, the average day has a total number of steps that is equal to the 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r, echo=TRUE, warning=FALSE, message=FALSE}
+
+```r
 dayData <- mutate(cleanData,weekday = weekdays(date))
 dayData$weekday[(grep("Saturday|Sunday", dayData$weekday, invert=T))] <- 1
 dayData$weekday[(grep("Saturday|Sunday", dayData$weekday))] <- 0 
@@ -105,3 +137,5 @@ dayData <- rbind(summarised_we, summarised_wd)
 
 qplot(interval, mean_steps, data=dayData, geom="line", xlab = "Interval", ylab = "Number of steps", facets = weekday ~ . )
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
